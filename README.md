@@ -69,13 +69,13 @@ python mec16xx-util.py <command> [args...]
 | Command | Description |
 |---|---|
 | `info` | Show chip and flash/EEPROM status |
-| `erase` | Emergency mass erase via JTAG |
-| `erase-pages <addr> <size>` | Erase flash pages via controller |
+| `emergency-erase` | Emergency mass erase via JTAG |
+| `erase-flash <addr> <size>` | Erase flash pages via controller |
 | `write-flash <addr> <file> [--verify]` | Program flash from binary |
 | `read-flash <addr> <size> [file] [--burst]` | Read flash (hex dump or save to file) |
-| `verify <addr> <file>` | Verify flash against a binary |
-| `read-eeprom [file]` | Dump full EEPROM (2 KB) |
+| `verify-flash <addr> <file>` | Verify flash against a binary |
 | `read-eeprom <addr> <size> [file]` | Read EEPROM range |
+| `verify-eeprom <addr> <file>` | Verify eeprom against a binary |
 
 ### Verify connection
 
@@ -87,8 +87,8 @@ python mec16xx-util.py info
 
 There are two erase modes:
 
-- **Page erase** (`erase-pages`) - erases specific flash pages via the flash controller. Use this for targeted erase before programming.
-- **Emergency mass erase** (`erase`) - sends a special JTAG sequence that erases the entire flash and EEPROM, bypassing all protection. Useful when boot or data block protection is active, or the chip is in a bad state. **Requires a power cycle before programming.**
+- **Flash erase ** (`erase-flash`) - erases specific flash pages via the flash controller. Use this for targeted erase before programming.
+- **Emergency mass erase** (`emergency-erase`) - sends a special JTAG sequence that erases the entire flash and EEPROM, bypassing all protection. Useful when boot or data block protection is active, or the chip is in a bad state. **Requires a power cycle before programming.**
 
 ### Programming
 

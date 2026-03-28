@@ -140,7 +140,7 @@ def do_chip_info(ocd):
         for addr in [0x0000, 0x1000, FLASH_STATUS]
     ]
     if all(v == 0 for v in vals):
-        print("\n  [WARN] Target may not be powered or connected(all reads return 0).")
+        print("\n  [WARN] Target may not be powered (all reads return 0).")
         return
 
     # Flash status
@@ -607,6 +607,55 @@ def do_read_eeprom(ocd, address, size, output_path=None):
     return True
 
 
+def do_verify_eeprom(ocd, address, filepath):
+    """Verify EEPROM contents against a binary file."""
+    print(f"\nLoading {filepath}...")
+    with open(filepath, "rb") as f:
+        expected = f.read()
+    print(f"  Size: {len(expected)} bytes")
+
+    print(f"\nVerifying EEPROM 0x{address:03X} - 0x{address + len(expected):03X}")
+    print("=" * 40)
+
+    ocd.halt()
+    time.sleep(0.2)
+
+    # Check if EEPROM is blocked
+    status = ocd.read_memory(EEPROM_STATUS, count=1, width=32)[0]
+    if status & EEPROM_STATUS_BLOCK:
+        print("  [FAIL] EEPROM is blocked (EEPROM_BLOCK=1)")
+        return False
+
+    ocd.write_memory(EEPROM_STATUS, [EEPROM_STATUS_ERRORS], width=32)
+    ocd.write_memory(EEPROM_COMMAND, [EEPROM_CMD_READ_BURST], width=32)
+    ocd.write_memory(EEPROM_ADDRESS, [address], width=32)
+
+    mismatches = 0
+    start = time.time()
+
+    for i in range(len(expected)):
+        actual = ocd.read_memory(EEPROM_DATA, count=1, width=32)[0] & 0xFF
+        if actual != expected[i]:
+            if mismatches < 10:
+                print(
+                    f"  [FAIL] 0x{address + i:03X}: expected 0x{expected[i]:02X}, got 0x{actual:02X}"
+                )
+            mismatches += 1
+        if i % 256 == 0:
+            pct = (i * 100) // len(expected)
+            print(f"    {pct:3d}%", end="\r")
+
+    elapsed = time.time() - start
+    ocd.write_memory(EEPROM_COMMAND, [EEPROM_CMD_STANDBY], width=32)
+
+    print(f"  Verified in {elapsed:.1f}s")
+    if mismatches:
+        print(f"\n[FAIL] Verification failed: {mismatches} mismatches")
+        return False
+    print(f"\n[OK] Verification passed! ({len(expected)} bytes match)")
+    return True
+
+
 # =============================================================================
 # MAIN
 # =============================================================================
@@ -622,13 +671,13 @@ Requires OpenOCD running separately:
 
 Commands:
   info                                       Show chip and flash status
-  erase                                      Emergency mass erase (JTAG)
-  erase-pages <addr> <size>                  Erase flash pages
+  emergency-erase                            Emergency mass erase (JTAG)
+  erase-flash <addr> <size>                  Erase flash pages
   write-flash <addr> <file> [--verify]       Program flash from binary
   read-flash <addr> <size> [file] [--burst]  Read flash (hex dump or save)
-  verify <addr> <file>                       Verify flash against binary
-  read-eeprom [file]                         Dump EEPROM (2KB)
+  verify-flash <addr> <file>                 Verify flash against binary
   read-eeprom <addr> <size> [file]           Read EEPROM range
+  verify-eeprom <addr> <file>                Verify EEPROM against binary
 """.strip()
 
 
@@ -661,12 +710,12 @@ def main():
             if cmd == "info":
                 do_chip_info(ocd)
 
-            elif cmd == "erase":
+            elif cmd == "emergency-erase":
                 do_emergency_erase(ocd)
 
-            elif cmd == "erase-pages":
+            elif cmd == "erase-flash":
                 if len(args) < 3:
-                    sys.exit("Usage: erase-pages <addr> <size>")
+                    sys.exit("Usage: erase-flash <addr> <size>")
                 addr = parse_int(args[1], "address")
                 size = parse_int(args[2], "size")
                 do_erase_flash(ocd, addr, size)
@@ -690,30 +739,37 @@ def main():
                     ocd, addr, size, remaining[0] if remaining else None, burst
                 )
 
-            elif cmd == "verify":
+            elif cmd == "verify-flash":
                 if len(args) < 3:
-                    sys.exit("Usage: verify <addr> <file>")
+                    sys.exit("Usage: verify-flash <addr> <file>")
                 addr = parse_int(args[1], "address")
                 fw_path = require_file(args[2])
                 do_verify(ocd, addr, fw_path)
 
             elif cmd == "read-eeprom":
-                if len(args) >= 3:
-                    addr = parse_int(args[1], "address")
-                    size = parse_int(args[2], "size")
-                    output_path = args[3] if len(args) >= 4 else None
-                elif len(args) == 2:
-                    addr, size, output_path = 0, EEPROM_SIZE, args[1]
-                else:
-                    addr, size, output_path = 0, EEPROM_SIZE, None
+                if len(args) < 3:
+                    sys.exit("Usage: read-eeprom <addr> <size> [file]")
+                addr = parse_int(args[1], "address")
+                size = parse_int(args[2], "size")
+                output_path = args[3] if len(args) >= 4 else None
                 do_read_eeprom(ocd, addr, size, output_path)
+
+            elif cmd == "verify-eeprom":
+                if len(args) < 3:
+                    sys.exit("Usage: verify-eeprom <addr> <file>")
+                addr = parse_int(args[1], "address")
+                fw_path = require_file(args[2])
+                do_verify_eeprom(ocd, addr, fw_path)
 
             else:
                 print(f"Unknown command: {cmd}")
                 print(USAGE)
 
     except ConnectionRefusedError:
-        sys.exit("ERROR: Cannot connect to OpenOCD on port 6666.\n")
+        sys.exit(
+            "ERROR: Cannot connect to OpenOCD on port 6666.\n"
+            "Start it first:  openocd -f mec16xx_ft232h.cfg"
+        )
 
 
 if __name__ == "__main__":
