@@ -14,7 +14,6 @@ Tested with the **MEC1641**. Should be compatible with other MEC16xx chips shari
 | MEC1663 | 256 KiB |
 | MEC1641 | 288 KiB |
 
----
 
 ## Requirements
 
@@ -23,12 +22,12 @@ Tested with the **MEC1641**. Should be compatible with other MEC16xx chips shari
 Any JTAG adapter supported by OpenOCD should work. The following have been tested:
 
 **FTDI-based adapters** (recommended)
-- [Adafruit FT232H Breakout](https://www.adafruit.com/product/2264) — tested
+- [Adafruit FT232H Breakout](https://www.adafruit.com/product/2264) - tested
 - FT2232H / FT4232H boards
 
 **Segger J-Link**
-- J-Link Ultra — tested on Windows and Linux
-- J-Link EDU Mini — tested on Linux only
+- J-Link Ultra - tested on Windows and Linux
+- J-Link EDU Mini - tested on Linux only
 
 **Other OpenOCD-compatible adapters** (untested)
 - ST-Link V2/V3
@@ -43,10 +42,9 @@ Any JTAG adapter supported by OpenOCD should work. The following have been teste
 # Ubuntu/Debian
 sudo apt install openocd
 
-# Windows — download from https://openocd.org/pages/getting-openocd.html
+# Windows - download from https://openocd.org/pages/getting-openocd.html
 ```
 
----
 
 ## Usage
 
@@ -89,8 +87,8 @@ python mec16xx_flash.py info
 
 There are two erase modes:
 
-- **Page erase** (`erase-pages`) — erases specific flash pages via the flash controller. Use this for targeted erase before programming.
-- **Emergency mass erase** (`erase`) — sends a special JTAG sequence that erases the entire flash and EEPROM, bypassing all protection. Useful when boot or data block protection is active, or the chip is in a bad state. **Requires a power cycle before programming.**
+- **Page erase** (`erase-pages`) - erases specific flash pages via the flash controller. Use this for targeted erase before programming.
+- **Emergency mass erase** (`erase`) - sends a special JTAG sequence that erases the entire flash and EEPROM, bypassing all protection. Useful when boot or data block protection is active, or the chip is in a bad state. **Requires a power cycle before programming.**
 
 ### Programming
 
@@ -124,15 +122,13 @@ python mec16xx_flash.py read-flash 0x0000 0x48000 dump.bin --burst
 python mec16xx_flash.py read-eeprom eeprom.bin
 ```
 
----
-
 ## Disclaimer
 
 Use at your own risk. I am not responsible for any damage to hardware or data loss. Always back up existing firmware before making any changes.
 
----
 
 ## Credits
 
-- [Glasgow Interface Explorer — mec16xx applet](https://github.com/GlasgowEmbedded/glasgow/blob/main/software/glasgow/applet/program/mec16xx/__init__.py)
+- [Glasgow Interface Explorer - mec16xx applet](https://github.com/GlasgowEmbedded/glasgow/blob/main/software/glasgow/applet/program/mec16xx/__init__.py)
 - [dossalab/mec16xx-simple-flash](https://github.com/dossalab/mec16xx-simple-flash)
+- Built with assistance from [Claude](https://claude.ai) (Anthropic)
