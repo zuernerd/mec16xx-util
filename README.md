@@ -25,6 +25,19 @@ Any JTAG adapter supported by OpenOCD should work. The following have been teste
 - [Adafruit FT232H Breakout](https://www.adafruit.com/product/2264) - tested
 - FT2232H / FT4232H boards
 
+<details>
+<summary>FT232H JTAG wiring</summary>
+
+| FT232H Pin | JTAG Signal |
+|---|---|
+| AD0 | TCK |
+| AD1 | TDI |
+| AD2 | TDO |
+| AD3 | TMS |
+| GND | GND |
+
+</details>
+
 **Segger J-Link**
 - J-Link Ultra - tested on Windows and Linux
 - J-Link EDU Mini - tested on Linux only
@@ -87,7 +100,7 @@ python mec16xx-util.py info
 
 There are two erase modes:
 
-- **Flash erase ** (`erase-flash`) - erases specific flash pages via the flash controller. Use this for targeted erase before programming.
+- **Flash erase** (`erase-flash`) - erases specific flash pages via the flash controller. Use this for targeted erase before programming.
 - **Emergency mass erase** (`emergency-erase`) - sends a special JTAG sequence that erases the entire flash and EEPROM, bypassing all protection. Useful when boot or data block protection is active, or the chip is in a bad state. **Requires a power cycle before programming.**
 
 ### Programming

@@ -198,45 +198,36 @@ def do_emergency_erase(ocd):
     print("=" * 40)
 
     # Select RESET_TEST register
-    print("  Selecting JTAG RESET_TEST register...")
     ocd.execute("irscan mec16xx.cpu 0x2")
 
     # Initialize - both PORs deasserted (1 = deasserted, active low)
-    print("  Initializing POR signals...")
     dr = (1 << BIT_VCC_POR) | (1 << BIT_VTR_POR)
     ocd.execute(f"drscan mec16xx.cpu 4 {dr}")
 
     # Enable JTAG control of POR
-    print("  Enabling POR control...")
     dr = (1 << BIT_VCC_POR) | (1 << BIT_VTR_POR) | (1 << BIT_POR_EN)
     ocd.execute(f"drscan mec16xx.cpu 4 {dr}")
 
     # Assert VTR_POR (0 = asserted)
-    print("  Asserting VTR_POR (reset)...")
     dr = (1 << BIT_VCC_POR) | (1 << BIT_POR_EN)
     ocd.execute(f"drscan mec16xx.cpu 4 {dr}")
 
     # Set Mass Erase bit
-    print("  Setting Mass Erase bit...")
     dr = (1 << BIT_ME) | (1 << BIT_VCC_POR) | (1 << BIT_POR_EN)
     ocd.execute(f"drscan mec16xx.cpu 4 {dr}")
 
     # Deassert VTR_POR - rising edge triggers mass erase!
-    print("  Triggering erase (VTR_POR rising edge)...")
     dr = (1 << BIT_ME) | (1 << BIT_VCC_POR) | (1 << BIT_VTR_POR) | (1 << BIT_POR_EN)
     ocd.execute(f"drscan mec16xx.cpu 4 {dr}")
 
     # Wait for erase to complete
-    print("  Waiting for erase (1 second)...")
     time.sleep(1.0)
 
     # Clear ME bit
-    print("  Clearing Mass Erase bit...")
     dr = (1 << BIT_VCC_POR) | (1 << BIT_VTR_POR) | (1 << BIT_POR_EN)
     ocd.execute(f"drscan mec16xx.cpu 4 {dr}")
 
     # Power cycle via POR
-    print("  Power cycling chip...")
     dr = (1 << BIT_VCC_POR) | (1 << BIT_POR_EN)
     ocd.execute(f"drscan mec16xx.cpu 4 {dr}")
     time.sleep(0.1)
@@ -244,7 +235,6 @@ def do_emergency_erase(ocd):
     ocd.execute(f"drscan mec16xx.cpu 4 {dr}")
 
     # Disable POR control
-    print("  Disabling POR control...")
     dr = (1 << BIT_VCC_POR) | (1 << BIT_VTR_POR)
     ocd.execute(f"drscan mec16xx.cpu 4 {dr}")
 
@@ -401,7 +391,6 @@ def do_write_flash(ocd, address, firmware_path):
     ocd.write_memory(FLASH_COMMAND, [CMD_STANDBY], width=32)
 
     print("\n[OK] Programming complete!")
-    print("\n  Power cycle and test the board.")
     return True
 
 
