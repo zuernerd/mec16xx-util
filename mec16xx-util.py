@@ -63,6 +63,11 @@ EEPROM_UNLOCK = 0xF02C20
 # EEPROM commands (bits [1:0] = mode, bit 2 = burst)
 EEPROM_CMD_STANDBY = 0x00
 EEPROM_CMD_READ_BURST = 0x05  # Read + Burst
+EEPROM_CMD_PROGRAM_BURST = 0x06  # Program + Burst
+EEPROM_CMD_ERASE = 0x03  # Erase mode
+
+# EEPROM address register: Mass_Erase[4:0] = 0x1F triggers full array erase
+EEPROM_MASS_ERASE_ADDR = 0x1F << 3  # Mass_Erase=0x1F, low 3 bits=0
 
 # EEPROM status bits
 EEPROM_STATUS_BUSY = 0x01
@@ -645,6 +650,105 @@ def do_verify_eeprom(ocd, address, filepath):
     return True
 
 
+def do_erase_eeprom(ocd):
+    """Erase entire EEPROM using mass erase (Mass_Erase=0x1F)."""
+    print("\nEEPROM Mass Erase")
+    print("=" * 40)
+
+    ocd.halt()
+    time.sleep(0.2)
+
+    # Check if EEPROM is blocked
+    status = ocd.read_memory(EEPROM_STATUS, count=1, width=32)[0]
+    if status & EEPROM_STATUS_BLOCK:
+        print("  [FAIL] EEPROM is blocked (EEPROM_BLOCK=1)")
+        return False
+
+    # Clear errors, set erase mode
+    ocd.write_memory(EEPROM_STATUS, [EEPROM_STATUS_ERRORS], width=32)
+    ocd.write_memory(EEPROM_COMMAND, [EEPROM_CMD_ERASE], width=32)
+
+    # Write address with Mass_Erase=0x1F to trigger full array erase
+    print("  Erasing...")
+    ocd.write_memory(EEPROM_ADDRESS, [EEPROM_MASS_ERASE_ADDR], width=32)
+
+    # Wait for erase to complete
+    for _ in range(10000):
+        st = ocd.read_memory(EEPROM_STATUS, count=1, width=32)[0]
+        if st & EEPROM_STATUS_ERRORS:
+            print(f"  [FAIL] EEPROM erase error (status=0x{st:03X})")
+            ocd.write_memory(EEPROM_COMMAND, [EEPROM_CMD_STANDBY], width=32)
+            return False
+        if (st & EEPROM_STATUS_BUSY) == 0:
+            break
+        time.sleep(0.001)
+    else:
+        print("  [FAIL] EEPROM erase timeout")
+        ocd.write_memory(EEPROM_COMMAND, [EEPROM_CMD_STANDBY], width=32)
+        return False
+
+    ocd.write_memory(EEPROM_COMMAND, [EEPROM_CMD_STANDBY], width=32)
+    print("\n[OK] EEPROM erased!")
+    return True
+
+
+def do_write_eeprom(ocd, address, filepath):
+    """Write binary file to EEPROM using burst program mode (byte-at-a-time)."""
+    print(f"\nLoading {filepath}...")
+    with open(filepath, 'rb') as f:
+        data = f.read()
+    print(f"  Size: {len(data)} bytes")
+
+    print(f"\nProgramming EEPROM 0x{address:03X} - 0x{address + len(data):03X}")
+    print("=" * 40)
+
+    ocd.halt()
+    time.sleep(0.2)
+
+    # Check if EEPROM is blocked
+    status = ocd.read_memory(EEPROM_STATUS, count=1, width=32)[0]
+    if status & EEPROM_STATUS_BLOCK:
+        print("  [FAIL] EEPROM is blocked (EEPROM_BLOCK=1)")
+        return False
+
+    # Clear errors, set burst program mode, write start address
+    ocd.write_memory(EEPROM_STATUS, [EEPROM_STATUS_ERRORS], width=32)
+    ocd.write_memory(EEPROM_COMMAND, [EEPROM_CMD_PROGRAM_BURST], width=32)
+    ocd.write_memory(EEPROM_ADDRESS, [address], width=32)
+
+    start = time.time()
+
+    for i, byte_val in enumerate(data):
+        # Wait for EEPROM not busy
+        for _ in range(5000):
+            st = ocd.read_memory(EEPROM_STATUS, count=1, width=32)[0]
+            if st & EEPROM_STATUS_ERRORS:
+                print(f"\n  [FAIL] EEPROM error at byte {i} (status=0x{st:03X})")
+                ocd.write_memory(EEPROM_COMMAND, [EEPROM_CMD_STANDBY], width=32)
+                return False
+            if (st & EEPROM_STATUS_BUSY) == 0:
+                break
+            time.sleep(0.001)
+        else:
+            print(f"\n  [FAIL] EEPROM busy timeout at byte {i}")
+            ocd.write_memory(EEPROM_COMMAND, [EEPROM_CMD_STANDBY], width=32)
+            return False
+
+        ocd.write_memory(EEPROM_DATA, [byte_val], width=32)
+
+        if i % 256 == 0:
+            pct = (i * 100) // len(data)
+            print(f"    {pct:3d}%", end='\r')
+
+    # Wait for last byte to finish
+    time.sleep(0.1)
+    ocd.write_memory(EEPROM_COMMAND, [EEPROM_CMD_STANDBY], width=32)
+
+    elapsed = time.time() - start
+    print(f"  [OK] Programmed {len(data)} bytes in {elapsed:.1f}s")
+    return True
+
+
 # =============================================================================
 # MAIN
 # =============================================================================
@@ -666,6 +770,8 @@ Commands:
   read-flash <addr> <size> [file] [--burst]  Read flash (hex dump or save)
   verify-flash <addr> <file>                 Verify flash against binary
   read-eeprom <addr> <size> [file]           Read EEPROM range
+  erase-eeprom                               Erase entire EEPROM
+  write-eeprom <addr> <file> [--verify]      Program EEPROM from binary
   verify-eeprom <addr> <file>                Verify EEPROM against binary
 """.strip()
 
@@ -742,6 +848,17 @@ def main():
                 size = parse_int(args[2], "size")
                 output_path = args[3] if len(args) >= 4 else None
                 do_read_eeprom(ocd, addr, size, output_path)
+
+            elif cmd == "erase-eeprom":
+                do_erase_eeprom(ocd)
+
+            elif cmd == "write-eeprom":
+                if len(args) < 3:
+                    sys.exit("Usage: write-eeprom <addr> <file> [--verify]")
+                addr = parse_int(args[1], "address")
+                fw_path = require_file(args[2])
+                if do_write_eeprom(ocd, addr, fw_path) and "--verify" in args:
+                    do_verify_eeprom(ocd, addr, fw_path)
 
             elif cmd == "verify-eeprom":
                 if len(args) < 3:

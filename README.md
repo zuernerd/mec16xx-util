@@ -88,7 +88,9 @@ python mec16xx-util.py <command> [args...]
 | `read-flash <addr> <size> [file] [--burst]` | Read flash (hex dump or save to file) |
 | `verify-flash <addr> <file>` | Verify flash against a binary |
 | `read-eeprom <addr> <size> [file]` | Read EEPROM range |
-| `verify-eeprom <addr> <file>` | Verify eeprom against a binary |
+| `erase-eeprom` | Erase entire EEPROM |
+| `write-eeprom <addr> <file> [--verify]` | Program EEPROM from binary |
+| `verify-eeprom <addr> <file>` | Verify EEPROM against a binary |
 
 ### Verify connection
 
@@ -131,8 +133,28 @@ python mec16xx-util.py read-flash 0x0000 0x48000 dump.bin --burst
 > **Note:** Boot region cannot be read if boot protection is active.
 
 ```bash
-# Dump full EEPROM
-python mec16xx-util.py read-eeprom eeprom.bin
+# Print EEPROM hex dump
+python mec16xx-util.py read-eeprom 0x0000 0x800
+
+# Save EEPROM to file
+python mec16xx-util.py read-eeprom 0x0000 0x800 eeprom.bin
+```
+
+### EEPROM Programming
+
+```bash
+python mec16xx-util.py write-eeprom 0x0000 eeprom.bin
+
+# With automatic verify
+python mec16xx-util.py write-eeprom 0x0000 eeprom.bin --verify
+```
+
+### EEPROM Erasing
+
+Erases the entire EEPROM (mass erase):
+
+```bash
+python mec16xx-util.py erase-eeprom
 ```
 
 ## Disclaimer
