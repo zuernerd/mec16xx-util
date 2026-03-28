@@ -4,7 +4,7 @@ A Python script to read, write, and erase the internal Flash and EEPROM memory o
 
 Tested with the **MEC1641**. Should be compatible with other MEC16xx chips sharing a similar Flash controller architecture (e.g. MEC1632, MEC1633, MEC1663, MEC1618/MEC1618i, MEC1609/MEC1609i).
 
-> Since no datasheet was available for the MEC1641, all register information was reverse-engineered from the [MEC1632 datasheet](https://ww1.microchip.com/downloads/en/DeviceDoc/00001592B.pdf).
+> Since no datasheet was available for the MEC1641, all register information was taken from the [MEC1632 datasheet](https://ww1.microchip.com/downloads/en/DeviceDoc/00001592B.pdf).
 
 ### Typical flash sizes by model
 
@@ -115,7 +115,7 @@ python mec16xx_flash.py read-flash 0x0000 0x48000 dump.bin
 python mec16xx_flash.py read-flash 0x0000 0x48000 dump.bin --burst
 ```
 
-> **Note:** Boot-protected regions cannot be read if boot protection is active.
+> **Note:** Boot region cannot be read if boot protection is active.
 
 ```bash
 # Dump full EEPROM
