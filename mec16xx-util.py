@@ -66,8 +66,8 @@ EEPROM_CMD_READ_BURST = 0x05  # Read + Burst
 EEPROM_CMD_PROGRAM_BURST = 0x06  # Program + Burst
 EEPROM_CMD_ERASE = 0x03  # Erase mode
 
-# EEPROM address register: Mass_Erase[4:0] = 0x1F triggers full array erase
-EEPROM_MASS_ERASE_ADDR = 0x1F << 3  # Mass_Erase=0x1F, low 3 bits=0
+# EEPROM address register: Mass_Erase[4:0] at bits [15:11]; 0x1F = full array erase
+EEPROM_MASS_ERASE_ADDR = 0x1F << 11  # Mass_Erase=0x1F (from Glasgow reference)
 
 # EEPROM status bits
 EEPROM_STATUS_BUSY = 0x01
