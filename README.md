@@ -61,7 +61,7 @@ openocd -f mec16xx_jlink.cfg
 Then run commands with:
 
 ```bash
-python mec16xx_flash.py <command> [args...]
+python mec16xx-util.py <command> [args...]
 ```
 
 ### Commands
@@ -80,7 +80,7 @@ python mec16xx_flash.py <command> [args...]
 ### Verify connection
 
 ```bash
-python mec16xx_flash.py info
+python mec16xx-util.py info
 ```
 
 ### Erasing
@@ -93,33 +93,33 @@ There are two erase modes:
 ### Programming
 
 ```bash
-python mec16xx_flash.py write-flash 0x1000 firmware.bin
+python mec16xx-util.py write-flash 0x1000 firmware.bin
 ```
 
 Add `--verify` to automatically verify after programming:
 
 ```bash
-python mec16xx_flash.py write-flash 0x1000 firmware.bin --verify
+python mec16xx-util.py write-flash 0x1000 firmware.bin --verify
 ```
 
 ### Reading / Dumping
 
 ```bash
 # Print hex dump to terminal
-python mec16xx_flash.py read-flash 0x0000 0x48000
+python mec16xx-util.py read-flash 0x0000 0x48000
 
 # Save to file
-python mec16xx_flash.py read-flash 0x0000 0x48000 dump.bin
+python mec16xx-util.py read-flash 0x0000 0x48000 dump.bin
 
 # Use burst mode for faster reads
-python mec16xx_flash.py read-flash 0x0000 0x48000 dump.bin --burst
+python mec16xx-util.py read-flash 0x0000 0x48000 dump.bin --burst
 ```
 
 > **Note:** Boot region cannot be read if boot protection is active.
 
 ```bash
 # Dump full EEPROM
-python mec16xx_flash.py read-eeprom eeprom.bin
+python mec16xx-util.py read-eeprom eeprom.bin
 ```
 
 ## Disclaimer
